@@ -1,24 +1,20 @@
 """Support for the Falcon Pi Player."""
-import logging
-import requests
-import datetime
-import voluptuous as vol
 
+import datetime
+import logging
+
+import homeassistant.helpers.config_validation as cv
+import requests
+import voluptuous as vol
 from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
 from homeassistant.components.media_player.const import (
     DOMAIN,
-    SUPPORT_VOLUME_SET,
-    SUPPORT_VOLUME_STEP,
     SUPPORT_SELECT_SOURCE,
     SUPPORT_STOP,
+    SUPPORT_VOLUME_SET,
+    SUPPORT_VOLUME_STEP,
 )
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_NAME,
-    STATE_IDLE,
-    STATE_PLAYING,
-)
-import homeassistant.helpers.config_validation as cv
+from homeassistant.const import CONF_HOST, CONF_NAME, STATE_IDLE, STATE_PLAYING
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,7 +65,9 @@ class FalconPiPlayer(MediaPlayerEntity):
         self._volume = status["volume"] / 100
         self._media_title = status["current_sequence"].replace(".fseq", "")
         self._media_playlist = status["current_playlist"]["playlist"]
-        self._media_duration = str(int(status["seconds_played"]) + int(status["seconds_remaining"]))
+        self._media_duration = str(
+            int(status["seconds_played"]) + int(status["seconds_remaining"])
+        )
         self._media_position = status["seconds_played"]
         self._media_position_updated_at = datetime.datetime.now()
 
@@ -122,12 +120,12 @@ class FalconPiPlayer(MediaPlayerEntity):
     def media_position(self):
         """Return the position of the current media."""
         return self._media_position
-    
+
     @property
     def media_position_updated_at(self):
         """Return the time the position of the current media was updated."""
         return self._media_position_updated_at
-    
+
     @property
     def media_duration(self):
         """Return the duration of the current media."""
@@ -135,7 +133,10 @@ class FalconPiPlayer(MediaPlayerEntity):
 
     def select_source(self, source):
         """Choose a playlist to play."""
-        requests.get("http://%s/api/playlist/%s/start" % (self._host, source))
+        requests.post(
+            "http://%s/api/command" % (self._host),
+            json={"command": "Start Playlist", "args": [source, "true", "false"]},
+        )
 
     def set_volume_level(self, volume):
         """Set volume level."""
@@ -162,4 +163,7 @@ class FalconPiPlayer(MediaPlayerEntity):
 
     def media_stop(self):
         """Immediately stop all FPP Sequences playing"""
-        requests.get("http://%s/api/playlists/stop" % (self._host))
+        requests.post(
+            "http://%s/api/command" % (self._host),
+            json={"command": "Stop Now"},
+        )
