@@ -133,6 +133,7 @@ class FalconPiPlayer(MediaPlayerEntity):
 
     def select_source(self, source):
         """Choose a playlist to play."""
+        self.media_stop()
         requests.post(
             "http://%s/api/command" % (self._host),
             json={"command": "Start Playlist", "args": [source, "true", "false"]},
